@@ -1,0 +1,63 @@
+# BASELINE: UniSRec — MoE adaptor + causal Transformer (SASRec-style)
+# Sem-only mode; no domain-alignment loss.
+experiment:
+  run_name: unisrec_sem
+  mode: sem
+  architecture: unisrec
+
+data_root: ./data
+source: amazon_movies_and_tv
+targets:
+  - amazon_cds_and_vinyl
+  - amazon_industrial_and_scientific
+
+# Aux domains declared for protocol audit only; UniSRec Sem does not use them.
+aux_domains:
+  - amazon_cds_and_vinyl
+  - amazon_industrial_and_scientific
+
+paths:
+  checkpoint_dir: artifacts/checkpoints/unisrec
+  result_dir: results/mainline/unisrec
+
+data:
+  seed: 2026
+  max_len: 50
+  min_len: 3
+  ranking: sampled
+  train_negatives: 5
+  eval_negatives: 100
+  num_workers: 0
+  embedding_dir: semantic_embeddings
+
+model:
+  hidden_dim: 128
+  num_layers: 2
+  num_heads: 2
+  dropout: 0.2
+  n_exps: 8
+
+training:
+  device: auto
+  batch_size: 128
+  epochs: 100
+  lr: 0.0003
+  weight_decay: 0.0
+  early_stop_patience: 5
+  eval_every: 1
+  grad_clip: 1.0
+  max_batches_per_epoch: 0
+
+evaluation:
+  primary_metric: NDCG@10
+  ks: [10, 20]
+  tie_policy: worst
+  fixed_negative_seed_offset: 10000
+  target_seed_offset: 20000
+  max_batches: 0
+
+runtime:
+  show_progress: true
+  print_json: false
+  progress_refresh_seconds: 0.5
+  leave_progress_bar: true

@@ -1,0 +1,85 @@
+# BASG with the BERT4Rec-Llama (SEM) semantic backbone.
+# Same Behavior Expert and Static Fusion as the SAGE-based BASG;
+# only the frozen semantic backbone checkpoint differs.
+experiment:
+  temporal_run_name: behavior_expert
+  fusion_run_name: sem_basg_static_fusion
+
+data_root: ./data
+source: amazon_movies_and_tv
+targets:
+  - amazon_cds_and_vinyl
+  - amazon_industrial_and_scientific
+
+paths:
+  backbone_checkpoint: artifacts/checkpoints/bert4rec_family/bert4rec_sem_amazon_movies_and_tv_seed2026.pt
+  temporal_checkpoint: artifacts/checkpoints/behavior_expert/behavior_expert_amazon_movies_and_tv_seed2026.pt
+  fusion_checkpoint: artifacts/checkpoints/static_fusion/sem_basg_static_fusion_amazon_movies_and_tv_seed2026.pt
+  result_dir: results/mainline/sem_basg
+
+data:
+  seed: 2026
+  max_len: 50
+  min_len: 3
+  ranking: sampled
+  train_negatives: 5
+  eval_negatives: 100
+  num_workers: 0
+  embedding_dir: semantic_embeddings
+
+evaluation:
+  primary_metric: NDCG@10
+  ks: [10, 20]
+  tie_policy: worst
+  fixed_negative_seed_offset: 10000
+  target_seed_offset: 20000
+  max_batches: 0
+
+temporal_features:
+  time_scale_ms: 86400000.0
+
+temporal_model:
+  hidden_dim: 64
+  num_layers: 1
+  num_heads: 2
+  dropout: 0.15
+  position_mode: fixed
+
+temporal_training:
+  device: auto
+  batch_size: 128
+  epochs: 100
+  lr: 0.001
+  weight_decay: 0.00001
+  early_stop_patience: 10
+  grad_clip: 1.0
+  max_batches_per_epoch: 0
+  pop_predictor_path: artifacts/popularity/amazon_movies_and_tv_pop_predictor.pt
+  behavior_mapper_path: artifacts/behavior/source_behavior_mapper.pt
+  behavior_dim: 64
+  use_behavior_lookup: true
+  behavior_fusion: dual_branch
+  behavior_gate_init: 0.1
+  fail_fast_behavior: true
+
+source_partitions:
+  popdyn_selection_user_fraction: 0.34
+  fusion_selection_user_fraction: 0.33
+  split_salt: 31415
+
+fusion:
+  static_beta_grid: [0.0, 0.02, 0.05, 0.10, 0.20, 0.35, 0.50]
+
+strict_zero_shot:
+  target_interactions_in_training: false
+  target_catalog_statistics_in_training: false
+  target_catalog_statistics_in_inference: false
+  target_prefix_timestamps_in_inference: true
+  target_item_semantic_embeddings_in_inference: true
+
+runtime:
+  show_progress: true
+  print_json: false
+  progress_refresh_seconds: 0.5
+  leave_progress_bar: true
+  save_timing_chart: false

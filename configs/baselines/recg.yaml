@@ -1,0 +1,75 @@
+# BASELINE: BERT4Rec-RecG-a0.1 — dual-level semantic generalization (v4)
+experiment:
+  run_name: bert4rec_recg_a01
+  mode: recg
+  architecture: dual
+
+data_root: ./data
+source: amazon_movies_and_tv
+targets:
+  - amazon_cds_and_vinyl
+  - amazon_industrial_and_scientific
+
+# Item-side semantic metadata only. Their interactions are not read in training.
+aux_domains:
+  - amazon_cds_and_vinyl
+  - amazon_industrial_and_scientific
+
+paths:
+  checkpoint_dir: artifacts/checkpoints/bert4rec_family
+  result_dir: results/mainline/bert4rec_family
+
+data:
+  seed: 2028
+  max_len: 50
+  min_len: 3
+  ranking: sampled
+  train_negatives: 5
+  eval_negatives: 100
+  num_workers: 0
+  embedding_dir: semantic_embeddings
+
+model:
+  hidden_dim: 128
+  num_layers: 2
+  num_heads: 2
+  dropout: 0.2
+
+training:
+  device: auto
+  batch_size: 128
+  epochs: 100
+  lr: 0.0001
+  weight_decay: 0.0
+  early_stop_patience: 10
+  eval_every: 1
+  grad_clip: 1.0
+  max_batches_per_epoch: 0
+
+evaluation:
+  primary_metric: NDCG@10
+  ks: [10, 20]
+  tie_policy: worst
+  fixed_negative_seed_offset: 10000
+  target_seed_offset: 20000
+  max_batches: 0
+
+alignment:
+  # Official single-alpha objective. Do not multiply this weighted loss again.
+  weighting: official_single_alpha
+  alpha: 0.01
+  temperature: 1.0
+  pool_size_per_domain: 4096
+  samples_per_domain_per_step: 128
+  source_domain_id: 0
+  lambda_g: 0.05
+  gamma_g: 0.1
+  beta_id: 0.1
+  adaptive_weight: true
+
+# Shared console/progress behavior for every train/eval entry point.
+runtime:
+  show_progress: true
+  print_json: false
+  progress_refresh_seconds: 0.5
+  leave_progress_bar: true
